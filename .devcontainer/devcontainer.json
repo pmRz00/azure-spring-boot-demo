@@ -24,7 +24,12 @@
 	
 	// Add the IDs of extensions you want installed when the container is created.
 	"extensions": [
-		"vscjava.vscode-java-pack"
+		"eamodio.gitlens",
+		"vscjava.vscode-java-pack",
+		"pivotal.vscode-boot-dev-pack",
+		"vscjava.vscode-azurespringcloud",
+		"ms-azuretools.vscode-azureterraform",
+		"4ops.terraform"
 	],
 
 	// Use 'forwardPorts' to make a list of ports inside the container available locally.
@@ -32,6 +37,7 @@
 
 	// Use 'postCreateCommand' to run commands after the container is created.
 	// "postCreateCommand": "java -version",
+	"postCreateCommand": "/bin/bash ./.devcontainer/post-install.sh",
 
 	// Uncomment to connect as a non-root user. See https://aka.ms/vscode-remote/containers/non-root.
 	"remoteUser": "vscode"
