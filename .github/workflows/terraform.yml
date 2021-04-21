@@ -19,6 +19,13 @@ jobs:
     steps:
     - uses: actions/checkout@v2
     - uses: hashicorp/setup-terraform@v1
+    - uses: Azure/login@v1.1
+
+    - name: Azure Login      
+      with:
+        
+        creds: ${{AZURE_CREDENTIALS}}
+
 
     - name: Terraform fmt
       id: fmt
