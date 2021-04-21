@@ -2,15 +2,20 @@ on:
   push:
     branches:
     - main
-    # paths:
-    # - 'deploy/**'
+    paths:
+    - '**.tf'
+    - '**terraform**'
 
 defaults:
   run:
     working-directory: './deploy/terraform'
 
 jobs:
+
   deploy_cloud_resources:
+
+    runs-on: ubuntu-latest
+
     steps:
     - uses: actions/checkout@v2
     - uses: hashicorp/setup-terraform@v1
