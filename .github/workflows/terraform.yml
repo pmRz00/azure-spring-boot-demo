@@ -18,17 +18,18 @@ jobs:
 
     steps:
     - uses: actions/checkout@v2
+
+    - name: Terraform fmt
+      id: fmt
+      run: terraform fmt -check
+      continue-on-error: true
+      
     - uses: hashicorp/setup-terraform@v1    
 
     - name: Azure Login  
       uses: Azure/login@v1.1    
       with:
         creds: ${{ secrets.AZURE_CREDENTIALS }}
-
-    - name: Terraform fmt
-      id: fmt
-      run: terraform fmt -check
-      continue-on-error: true
 
     - name: Terraform Init
       id: init
