@@ -1,11 +1,13 @@
 on:
   push:
+    branches:
+    - main
     paths:
-    - "./deploy/terraform/**"
+    - 'deploy/**'
 
 defaults:
   run:
-    working-directory: "./deploy/terraform"
+    working-directory: './deploy/terraform'
 
 jobs:
   deploy_cloud_resources:
