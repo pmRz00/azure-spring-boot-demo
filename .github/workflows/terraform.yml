@@ -9,18 +9,16 @@ on:
 
 defaults:
   run:
-    working-directory: './deploy/terraform'
-  env:
-    TF_VAR_ARM_CLIENT_ID: ${{ secrets.AZURE_AD_CLIENT_ID }}
-    TF_VAR_ARM_CLIENT_SECRET: ${{ secrets.AZURE_AD_CLIENT_SECRET }}
-    TF_VAR_ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-    TF_VAR_ARM_TENANT_ID: ${{ secrets.AZURE_AD_TENANT_ID }}
+    working-directory: './deploy/terraform'  
 
 jobs:
-
   deploy_cloud_resources:
-
     runs-on: ubuntu-latest
+    env:
+      TF_VAR_ARM_CLIENT_ID: ${{ secrets.AZURE_AD_CLIENT_ID }}
+      TF_VAR_ARM_CLIENT_SECRET: ${{ secrets.AZURE_AD_CLIENT_SECRET }}
+      TF_VAR_ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      TF_VAR_ARM_TENANT_ID: ${{ secrets.AZURE_AD_TENANT_ID }}
 
     steps:
     - uses: actions/checkout@v2
