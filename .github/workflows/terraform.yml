@@ -2,8 +2,8 @@ on:
   push:
     branches:
     - main
-    paths:
-    - 'deploy/**'
+    # paths:
+    # - 'deploy/**'
 
 defaults:
   run:
