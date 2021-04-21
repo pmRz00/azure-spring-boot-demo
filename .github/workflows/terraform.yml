@@ -5,6 +5,7 @@ on:
     paths:
     - '**.tf'
     - '**terraform**'
+  workflow_dispatch:
 
 defaults:
   run:
@@ -23,7 +24,7 @@ jobs:
       id: fmt
       run: terraform fmt -check
       continue-on-error: true
-      
+
     - uses: hashicorp/setup-terraform@v1    
 
     - name: Azure Login  
