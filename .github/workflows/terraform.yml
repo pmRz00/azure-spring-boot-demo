@@ -72,5 +72,5 @@ jobs:
     - name: Terraform Apply
       if: github.ref == 'refs/heads/main'
       id: apply
-      run: terraform apply -auto-approve
+      run: terraform apply -auto-approve -var mysql_server_admin_password=${{ secrets.MYSQL_PASSWORD }}
       continue-on-error: false

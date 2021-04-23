@@ -11,16 +11,20 @@ provider "azurerm" {
   features {}
 }
 
-
+variable "mysql_server_admin_password" {
+  type    = string
+}
 variable "resource_group" {
   type    = string
+  default = "azure-spring-demo"
 }
 variable "region" {
   type    = string
-  default = "West US 2"
+  default = "northeurope"
 }
 variable "spring_cloud_service" {
   type    = string
+  default = "azure-spring-demo"
 }
 variable "api_gateway" {
   type    = string
@@ -38,36 +42,26 @@ variable "visits_service" {
   type    = string
   default = "visits-service"
 }
-
 variable "vets_service" {
   type    = string
   default = "vets-service"
 }
-
 variable "mysql_server_admin_name" {
   type    = string
   default = "sqlAdmin"
 }
-
-variable "mysql_server_admin_password" {
-  type    = string
-}
-
 variable "mysql_database_name" {
   type    = string
   default = "petclinic"
 }
-
 variable "vnet_address_space" {
   type    = string
   default = "10.11.0.0/16"
 }
-
 variable "app_subnet_address_space" {
   type    = string
   default = "10.11.1.0/24"
 }
-
 variable "service_subnet_address_space" {
   type    = string
   default = "10.11.2.0/24"
@@ -128,7 +122,7 @@ resource "azurerm_spring_cloud_service" "demo" {
   network {
     app_subnet_id             = azurerm_subnet.app_subnet.id
     service_runtime_subnet_id = azurerm_subnet.service_subnet.id
-    cidr                      = ["10.4.0.0/16", "10.5.0.0/16", "10.3.0.1/16"]
+    cidr_ranges               = ["10.4.0.0/16", "10.5.0.0/16", "10.3.0.1/16"]
   }
 
   tags = {
