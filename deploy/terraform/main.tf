@@ -11,144 +11,221 @@ provider "azurerm" {
   features {}
 }
 
+
+variable "resource_group" {
+  type    = string
+}
+variable "region" {
+  type    = string
+  default = "West US 2"
+}
+variable "spring_cloud_service" {
+  type    = string
+}
+variable "api_gateway" {
+  type    = string
+  default = "api-gateway"
+}
+variable "admin_server" {
+  type    = string
+  default = "admin-server"
+}
+variable "customers_service" {
+  type    = string
+  default = "customers-service"
+}
+variable "visits_service" {
+  type    = string
+  default = "visits-service"
+}
+
+variable "vets_service" {
+  type    = string
+  default = "vets-service"
+}
+
+variable "mysql_server_admin_name" {
+  type    = string
+  default = "sqlAdmin"
+}
+
+variable "mysql_server_admin_password" {
+  type    = string
+}
+
+variable "mysql_database_name" {
+  type    = string
+  default = "petclinic"
+}
+
+variable "vnet_address_space" {
+  type    = string
+  default = "10.11.0.0/16"
+}
+
+variable "app_subnet_address_space" {
+  type    = string
+  default = "10.11.1.0/24"
+}
+
+variable "service_subnet_address_space" {
+  type    = string
+  default = "10.11.2.0/24"
+}
+
+locals {
+  mysql_server_name  = "pcsms-db-${var.resource_group}"
+  app_insights_name  = "pcsms-ai-${var.resource_group}"
+  log_analytics_name = "pcsms-log-${var.resource_group}"
+}
+
 resource "azurerm_resource_group" "demo" {
-  name     = "tostille-spring-cloud-demo"
-  location = "northeurope"
+  name     = var.resource_group
+  location = var.region
+}
+
+resource "azurerm_virtual_network" "test" {
+  name                = "acctestvirtnetcz"
+  address_space       = [var.vnet_address_space]
+  location            = azurerm_resource_group.demo.location
+  resource_group_name = azurerm_resource_group.demo.name
+}
+
+resource "azurerm_subnet" "app_subnet" {
+  name                 = "app_subnet"
+  resource_group_name  = azurerm_resource_group.demo.name
+  virtual_network_name = azurerm_virtual_network.test.name
+  address_prefixes     = [var.app_subnet_address_space]
+}
+
+resource "azurerm_subnet" "service_subnet" {
+  name                 = "service_subnet"
+  resource_group_name  = azurerm_resource_group.demo.name
+  virtual_network_name = azurerm_virtual_network.test.name
+  address_prefixes     = [var.service_subnet_address_space]
+}
+
+
+# Make sure the SPID used to provision terraform has privilage to do role assignments. 
+resource "azurerm_role_assignment" "ra" {
+  scope                = azurerm_virtual_network.test.id
+  role_definition_name = "Owner"
+  principal_id         = "d2531223-68f9-459e-b225-5592f90d145e"
 }
 
 resource "azurerm_spring_cloud_service" "demo" {
-  name                = "tostillesp"
+  name                = var.spring_cloud_service
   resource_group_name = azurerm_resource_group.demo.name
   location            = azurerm_resource_group.demo.location
 
   config_server_git_setting {
-    uri          = "https://github.com/Azure-Samples/piggymetrics-config"
+    uri          = "https://github.com/selvasingh/spring-petclinic-microservices-config"
     label        = "master"
     search_paths = ["."]
+
+  }
+
+  network {
+    app_subnet_id             = azurerm_subnet.app_subnet.id
+    service_runtime_subnet_id = azurerm_subnet.service_subnet.id
+    cidr                      = ["10.4.0.0/16", "10.5.0.0/16", "10.3.0.1/16"]
+  }
+
+  tags = {
+    Env = "staging"
   }
 }
 
-resource "azurerm_storage_account" "demo" {
-  name                     = "usernamest"
-  resource_group_name      = azurerm_resource_group.demo.name
-  location                 = azurerm_resource_group.demo.location
-  account_tier             = "Standard"
-  account_replication_type = "GRS"
-}
-
-resource "azurerm_monitor_diagnostic_setting" "demo" {
-  name               = "demo"
-  target_resource_id = "${azurerm_spring_cloud_service.demo.id}"
-  storage_account_id = "${azurerm_storage_account.demo.id}"
-
-  log {
-    category = "SystemLogs"
-    enabled  = true
-
-    retention_policy {
-      enabled = false
-    }
-  }
-
-  metric {
-    category = "AllMetrics"
-
-    retention_policy {
-      enabled = false
-    }
-  }
-}
-
-resource "azurerm_virtual_network" "demo" {
-  name                = "demo-network"
+resource "azurerm_spring_cloud_app" "api_gateway" {
+  name                = var.api_gateway
   resource_group_name = azurerm_resource_group.demo.name
-  location            = azurerm_resource_group.demo.location
-  address_space       = ["10.254.0.0/16"]
+  service_name        = azurerm_spring_cloud_service.demo.name
 }
 
-resource "azurerm_subnet" "frontend" {
-  name                 = "frontend"
-  resource_group_name  = azurerm_resource_group.demo.name
-  virtual_network_name = azurerm_virtual_network.demo.name
-  address_prefixes     = ["10.254.0.0/24"]
-}
 
-resource "azurerm_subnet" "backend" {
-  name                 = "backend"
-  resource_group_name  = azurerm_resource_group.demo.name
-  virtual_network_name = azurerm_virtual_network.demo.name
-  address_prefixes     = ["10.254.2.0/24"]
-}
-
-resource "azurerm_public_ip" "demo" {
-  name                = "demo-pip"
+resource "azurerm_spring_cloud_app" "admin_server" {
+  name                = var.admin_server
   resource_group_name = azurerm_resource_group.demo.name
-  location            = azurerm_resource_group.demo.location
-  allocation_method   = "Dynamic"
+  service_name        = azurerm_spring_cloud_service.demo.name
 }
 
-#&nbsp;since these variables are re-used - a locals block makes this more maintainable
-locals {
-  backend_address_pool_name      = "${azurerm_virtual_network.demo.name}-beap"
-  frontend_port_name             = "${azurerm_virtual_network.demo.name}-feport"
-  frontend_ip_configuration_name = "${azurerm_virtual_network.demo.name}-feip"
-  http_setting_name              = "${azurerm_virtual_network.demo.name}-be-htst"
-  listener_name                  = "${azurerm_virtual_network.demo.name}-httplstn"
-  request_routing_rule_name      = "${azurerm_virtual_network.demo.name}-rqrt"
-  redirect_configuration_name    = "${azurerm_virtual_network.demo.name}-rdrcfg"
-}
-
-resource "azurerm_application_gateway" "network" {
-  name                = "demo-appgateway"
+resource "azurerm_spring_cloud_app" "customers_service" {
+  name                = var.customers_service
   resource_group_name = azurerm_resource_group.demo.name
+  service_name        = azurerm_spring_cloud_service.demo.name
+}
+
+resource "azurerm_spring_cloud_app" "vets_service" {
+  name                = var.vets_service
+  resource_group_name = azurerm_resource_group.demo.name
+  service_name        = azurerm_spring_cloud_service.demo.name
+}
+
+resource "azurerm_spring_cloud_app" "visits_service" {
+  name                = var.visits_service
+  resource_group_name = azurerm_resource_group.demo.name
+  service_name        = azurerm_spring_cloud_service.demo.name
+}
+
+
+resource "azurerm_mysql_server" "demo" {
+  name                = local.mysql_server_name
   location            = azurerm_resource_group.demo.location
+  resource_group_name = azurerm_resource_group.demo.name
 
-  sku {
-    name     = "Standard_Small"
-    tier     = "Standard"
-    capacity = 2
-  }
+  sku_name = "GP_Gen5_2"
 
-  gateway_ip_configuration {
-    name      = "my-gateway-ip-configuration"
-    subnet_id = azurerm_subnet.frontend.id
-  }
+  storage_mb                   = 5120
+  backup_retention_days        = 7
+  geo_redundant_backup_enabled = true
 
-  frontend_port {
-    name = local.frontend_port_name
-    port = 80
-  }
+  administrator_login          = var.mysql_server_admin_name
+  administrator_login_password = var.mysql_server_admin_password
+  version                      = "5.7"
+  ssl_enforcement_enabled      = true
+}
 
-  frontend_ip_configuration {
-    name                 = local.frontend_ip_configuration_name
-    public_ip_address_id = azurerm_public_ip.demo.id
-  }
+resource "azurerm_mysql_database" "demo" {
+  name                = var.mysql_database_name
+  resource_group_name = azurerm_resource_group.demo.name
+  server_name         = azurerm_mysql_server.demo.name
+  charset             = "utf8"
+  collation           = "utf8_unicode_ci"
+}
 
-  backend_address_pool {
-    name = local.backend_address_pool_name
-  }
+resource "azurerm_mysql_firewall_rule" "allazureips" {
+  name                = "allAzureIPs"
+  resource_group_name = azurerm_resource_group.demo.name
+  server_name         = azurerm_mysql_server.demo.name
+  start_ip_address    = "0.0.0.0"
+  end_ip_address      = "0.0.0.0"
+}
 
-  backend_http_settings {
-    name                  = local.http_setting_name
-    cookie_based_affinity = "Disabled"
-    path                  = "/path1/"
-    port                  = 80
-    protocol              = "Http"
-    request_timeout       = 60
-  }
+resource "azurerm_mysql_configuration" "demo" {
+  name                = "interactive_timeout"
+  resource_group_name = azurerm_resource_group.demo.name
+  server_name         = azurerm_mysql_server.demo.name
+  value               = "2147483"
+}
 
-  http_listener {
-    name                           = local.listener_name
-    frontend_ip_configuration_name = local.frontend_ip_configuration_name
-    frontend_port_name             = local.frontend_port_name
-    protocol                       = "Http"
-  }
+resource "azurerm_mysql_configuration" "time_zone" {
+  name                = "time_zone"
+  resource_group_name = azurerm_resource_group.demo.name
+  server_name         = azurerm_mysql_server.demo.name
+  value               = "-8:00" // Add appropriate offset based on your region.
+}
 
-  request_routing_rule {
-    name                       = local.request_routing_rule_name
-    rule_type                  = "Basic"
-    http_listener_name         = local.listener_name
-    backend_address_pool_name  = local.backend_address_pool_name
-    backend_http_settings_name = local.http_setting_name
-  }
+resource "azurerm_log_analytics_workspace" "loganalytics" {
+  name                = local.log_analytics_name
+  location            = azurerm_resource_group.demo.location
+  resource_group_name = azurerm_resource_group.demo.name
+  sku                 = "PerGB2018"
+  retention_in_days   = 30
+}
+
+resource "azurerm_application_insights" "appanalytics" {
+  name                = local.app_insights_name
+  location            = azurerm_resource_group.demo.location
+  resource_group_name = azurerm_resource_group.demo.name
+  application_type    = "java"
 }
